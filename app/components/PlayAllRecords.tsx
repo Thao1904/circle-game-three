@@ -14,7 +14,7 @@ export default function PlayAllRecords() {
     const load = async () => {
       setLoading(true);
       try {
-        const res = await fetch('/api/records');
+        const res = await fetch("/api/records", { cache: "no-store" });
         const json = await res.json();
         console.log('Fetched /api/records:', json);
         if (json.success) setRecords(json.records || []);
@@ -28,36 +28,38 @@ export default function PlayAllRecords() {
   }, []);
 
   const handlePlayAll = async () => {
-    if (playing) return;
+    if (playing || records.length === 0) return;
+
+    setPlaying(true);
     audiosRef.current = [];
-    try {
-      console.log('Attempting to play all, count=', records.length);
-      let playedAny = false;
-      for (const r of records) {
-        try {
-          const a = new Audio(r.url);
-          // don't set crossOrigin here — playback of simple media doesn't require CORS
-          audiosRef.current.push(a);
-          await a.play();
-          playedAny = true;
-        } catch (err) {
-          console.warn('play individual failed for', r.url, err);
+
+    console.log("Play all:", records.length);
+
+    for (const r of records) {
+      try {
+        const audio = new Audio(r.url);
+        audiosRef.current.push(audio);
+
+        const playPromise = audio.play();
+        if (playPromise) {
+          playPromise.catch((err) => {
+            console.warn("Play failed:", r.url, err);
+          });
         }
+      } catch (err) {
+        console.warn("Create audio failed:", r.url, err);
       }
-      if (playedAny) setPlaying(true);
-    } catch (e) {
-      console.error('Error playing all', e);
     }
   };
 
   const handleStopAll = () => {
+    console.log("Stop all");
+
     for (const a of audiosRef.current) {
       try {
         a.pause();
         a.currentTime = 0;
-      } catch (e) {
-        // ignore
-      }
+      } catch (e) {}
     }
     audiosRef.current = [];
     setPlaying(false);
