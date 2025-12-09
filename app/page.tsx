@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { MongoClient } from 'mongodb';
 import PlayAllRecords from '@/app/components/PlayAllRecords';
 
